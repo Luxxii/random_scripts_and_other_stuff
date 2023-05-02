@@ -1,0 +1,50 @@
+\documentclass[12pt]{article}
+\usepackage[backend=biber, sorting=none]{biblatex}
+\addbibresource{biblio.bib}
+
+% Set Document Layout 
+\usepackage[total={6.5in, 9in}]{geometry}
+\usepackage[onehalfspacing]{setspace} % 1.5 Spacing 
+
+\usepackage{lipsum}  
+
+% \setlength{\abovecaptionskip}{1ex}
+% \setlength{\belowcaptionskip}{1ex}
+\setlength{\floatsep}{24pt}
+\setlength{\textfloatsep}{24pt} 
+\renewcommand{\floatpagefraction}{0.8}
+
+\setcounter{tocdepth}{1}
+
+
+\title{Same Titile as below}
+\author{Author}
+\date{If needed a date}
+
+
+\begin{document}
+\maketitle
+
+\section{Section}
+\lipsum[2-4] \cite{customlabel}
+
+
+\section{Second Section}
+\lipsum[2-4]
+\subsection{Sub-Section}
+\lipsum[2-4]
+
+
+\begingroup
+\setlength{\emergencystretch}{.5em}
+\printbibliography
+\endgroup
+
+
+\appendix
+
+\section{Appendix Section}
+\lipsum[2-4]
+
+
+\end{document}

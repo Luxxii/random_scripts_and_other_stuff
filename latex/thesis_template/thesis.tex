@@ -1,0 +1,125 @@
+\documentclass[12pt]{book}
+\usepackage[backend=biber, sorting=none]{biblatex}
+\addbibresource{biblio.bib}
+
+% Set Document Layout 
+\usepackage[top=3cm, bottom=3cm, left=3.5cm, right=2.5cm]{geometry}
+\usepackage[onehalfspacing]{setspace} % 1.5 Spacing 
+
+\usepackage{lipsum}  
+
+% \setlength{\abovecaptionskip}{1ex}
+% \setlength{\belowcaptionskip}{1ex}
+\setlength{\floatsep}{24pt}
+\setlength{\textfloatsep}{24pt} 
+\renewcommand{\floatpagefraction}{0.8}
+
+
+\setcounter{tocdepth}{1}
+
+
+\title{Same Titile as below}
+\author{Same author as below}
+\date{Same date as below}
+
+
+% Book omit "Chapter 1" and instead use "1. \thechapter"
+\makeatletter
+\def\@makechapterhead#1{%
+  \vspace*{50\p@}%
+  {\parindent \z@ \raggedright \normalfont
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        %\huge\bfseries \@chapapp\space \thechapter
+        \Huge\bfseries \thechapter.\space%
+        %\par\nobreak
+        %\vskip 20\p@
+      \fi
+    \fi
+    \interlinepenalty\@M
+    \Huge \bfseries #1\par\nobreak
+    \vskip 40\p@
+  }}
+\makeatother
+
+
+\begin{document}
+\frontmatter
+\begin{titlepage}
+    \thispagestyle{empty}
+    \begin{center}
+      \large
+      Some Faculty \\
+      Whatever \\
+      And even more Information \\
+      \vspace{4cm}
+      {\bfseries - Thesis -} \\
+      {\bfseries (additional information)} \\
+      \vspace{1cm}
+      {\LARGE \bfseries An interesting Title} \\
+      \vspace{0.5cm}
+      submitted by the author \\
+      \vspace{6cm}
+      Additinoal Information 1 \\
+      Additional Information 2 \\
+      date \\
+    \end{center}
+\end{titlepage} 
+
+\cleardoublepage
+\vfill
+{\hfill\Huge\textbf{Abstract}\hfill}
+
+\noindent
+\lipsum[2-4]
+\cite{customlabel}
+
+\newpage
+\tableofcontents
+
+\listoffigures
+\begingroup
+\let\clearpage\relax
+\listoftables
+\endgroup
+
+%========================================
+% Set counter to zero 
+\cleardoublepage
+\mainmatter
+\setcounter{page}{1}
+%========================================
+
+
+
+\chapter{First Chapter}
+\lipsum[2-4]
+ 
+\section{Section}
+\lipsum[2-4]
+
+\chapter{Chapter 2}
+\lipsum[2-4]
+
+\section{Section}
+\lipsum[2-4]
+\subsection{Sub-Section}
+\lipsum[2-4]
+
+
+\begingroup
+\setlength{\emergencystretch}{.5em}
+\printbibliography
+\endgroup
+
+
+\appendix
+
+
+\chapter{Appendix Chapter}
+\lipsum[2-4]
+\section{Appendix Section}
+\lipsum[2-4]
+
+
+\end{document}

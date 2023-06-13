@@ -13,8 +13,8 @@ with open(in_file, "r") as in_fasta, open(out_file, "w") as out_fasta:
         if line.startswith(">"):
             desc = line.split("|", 2)[-1]
 
-            line = line.replace(" ", "")
-            matches_regex = re.finditer(regex_pg_header, line, re.MULTILINE)
+            desc = desc.replace(" ", "")
+            matches_regex = re.finditer(regex_pg_header, desc, re.MULTILINE)
             matches = [x.group() for x in matches_regex]
 
             if len(matches) == 1:

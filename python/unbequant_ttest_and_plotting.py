@@ -111,6 +111,11 @@ def parse_args():
         help="A percentage (0 - 1), which is allowed to be missing in a group. Set it to 0.3 to allow 30% of missing values in a group"
     )
 
+    parser.add_argument(
+        "--log2_intensities_provided", "-lip", type=bool, default=True,
+        help="Are there log2 intensities provided? If yes, set this to 1. "
+    )
+
     # Output-CSV
     parser.add_argument(
         "--output", "-out", type=str, default=sys.stdout,
@@ -237,7 +242,10 @@ if __name__ == "__main__":
             dict_for_pd["ms2s"].append(";".join(parse_ms2_scans([line[x] for x in ms2_scans_idx],  ms2_scans_origin)))
             dict_for_pd["ttest_ind_pvalue"].append(res.pvalue)
             dict_for_pd["ttest_ind_statistic"].append(res.statistic)
-            dict_for_pd["fold_change_A_div_B"].append(np.log2(np.mean(ga) / np.mean(gb)))
+            if args.log2_intensities_provided:
+                dict_for_pd["fold_change_A_div_B"].append(np.log2(np.mean([2**x for x in ga]) / np.mean([2**x for x in gb])))
+            else:
+                dict_for_pd["fold_change_A_div_B"].append(np.log2(np.mean(ga) / np.mean(gb)))
             dict_for_pd["missing_values_in_a"].append(missing_ga)
             dict_for_pd["missing_values_in_b"].append(missing_gb)
             dict_for_pd["first_iso_global_min_mz"].append(float(line[first_iso_global_min_mz_idx]))
@@ -251,7 +259,7 @@ if __name__ == "__main__":
 
         except:
             # Could not calculate write nones
-            tsv_out.writerow(line + [None, None, np.log2(np.mean(ga) / np.mean(gb))])
+            print("Could not calculate ttest_ind for rowkey: ", line[openmsid_idx])
 
     
     # Generate pandas dataframe

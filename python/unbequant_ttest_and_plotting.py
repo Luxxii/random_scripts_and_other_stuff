@@ -34,7 +34,7 @@ def parse_ms2_scans(cells: str, origin_str: str):
                 try:
                     ms2s = ",".join(str(x) for x in literal_eval(cell))
                     if ms2s:
-                        ms2_with_origin.append(origin + ":" + ms2s) 
+                        ms2_with_origin.append(origin + ":" + ms2s)
                 except (ValueError, SyntaxError):
                     # if the cell is not parsable it is a malformed list string element (we skip it)
                     ms2_with_origin.append(None)
@@ -147,14 +147,14 @@ def coloring_volcano(x):
     elif x == 12:
         # is identified and significant
         return "Identified and Significant"
-    
+
 
 
 if __name__ == "__main__":
     # Parse arguments
     args = parse_args()
 
-    # TODO should they be in the same size ? 
+    # TODO should they be in the same size ?
     # if args.groupA is None or args.groupB is None or \
     #     len(args.groupA) != len(args.groupB) or len(args.groupA) == 0:
     #     raise Exception("Groups need to be specified and need to be of same length")
@@ -167,6 +167,7 @@ if __name__ == "__main__":
     gB_idx = [header.index(x) for x in args.groupB]
     openmsid_idx = header.index("openms_ceid")
     pep_ident_idx = [header.index(x) for x in header if x.endswith("_____l_pep_ident")]
+    raw_pep_ident_idx = [header.index(x) for x in header if x.endswith("_____l_raw_pep_ident")]
     prot_ident_idx = [header.index(x) for x in header if x.endswith("_____l_prot_ident")]
     charge_idx = [header.index(x) for x in header if x.endswith("_____charge")]
     ms2_scans_idx = [header.index(x) for x in header if x.endswith("_____l_ms2_scans")]
@@ -179,10 +180,11 @@ if __name__ == "__main__":
     feature_global_max_mz_idx = header.index("feature_global_max_mz")
     feature_global_min_rt_idx = header.index("feature_global_min_rt")
     feature_global_max_rt_idx = header.index("feature_global_max_rt")
-
+    # Get additional headers, which were addded after the UnbeQuant analysis
+    non_unbequant_headers = set([header.index(x) for x in header if "_____" not in x]) - set([openmsid_idx, first_iso_global_min_mz_idx, first_iso_global_max_mz_idx, first_iso_global_min_rt_idx, first_iso_global_max_rt_idx, feature_global_min_mz_idx, feature_global_max_mz_idx, feature_global_min_rt_idx, feature_global_max_rt_idx])
 
     # Iterate over each line and generate pd Frame
-    dict_for_pd = dict(
+    dict_for_pd = {**dict(
         openmsid=[],
         ttest_ind_pvalue=[],
         ttest_ind_statistic=[],
@@ -199,11 +201,13 @@ if __name__ == "__main__":
         feature_global_min_rt=[],
         feature_global_max_rt=[],
         pep_ident=[],
+        raw_pep_ident=[],
         prot_ident=[],
         ms2s=[],
-    )
+    ), **{header[x]: [] for x in non_unbequant_headers}}
+    additional_headers = [header[x] for x in non_unbequant_headers]
     for line in tqdm.tqdm(tsv_in):
-        
+
         # Get Cell Contents
         ga = [parse_intensity(line[x]) for x in gA_idx]
         gb = [parse_intensity(line[x]) for x in gB_idx]
@@ -226,9 +230,9 @@ if __name__ == "__main__":
             # Write pvalue and statistic
             res = ttest_ind(ga, gb)
             # Add to the dictionary missing information and other static stuff
-            # [res[1], res[0], np.log2(np.mean(ga) / np.mean(gb))])
             dict_for_pd["openmsid"].append(line[openmsid_idx])
             dict_for_pd["pep_ident"].append(";".join(parse_pep_prot_ident([line[x] for x in pep_ident_idx])))
+            dict_for_pd["raw_pep_ident"].append(";".join(parse_pep_prot_ident([line[x] for x in raw_pep_ident_idx])))
             dict_for_pd["prot_ident"].append(";".join(parse_pep_prot_ident([line[x] for x in prot_ident_idx])))
             dict_for_pd["charge"].append((set([parse_charge(line[x]) for x in charge_idx]) - {None}).pop())
             dict_for_pd["ms2s"].append(";".join(parse_ms2_scans([line[x] for x in ms2_scans_idx],  ms2_scans_origin)))
@@ -248,12 +252,13 @@ if __name__ == "__main__":
             dict_for_pd["feature_global_max_mz"].append(float(line[feature_global_max_mz_idx]))
             dict_for_pd["feature_global_min_rt"].append(float(line[feature_global_min_rt_idx]))
             dict_for_pd["feature_global_max_rt"].append(float(line[feature_global_max_rt_idx]))
-
-        except:
+            for h in non_unbequant_headers:
+                dict_for_pd[header[h]].append(line[h])
+        except Exception as e:
             # Could not calculate write nones
-            print("Could not calculate ttest_ind for rowkey: ", line[openmsid_idx])
+            print("Could not calculate ttest_ind for rowkey: ", line[openmsid_idx], "Error: ", e)
 
-    
+
     # Generate pandas dataframe
     df = pd.DataFrame(dict_for_pd)
 
@@ -268,26 +273,28 @@ if __name__ == "__main__":
 
     # Save the dataframe
     df.to_csv(args.output, sep="\t", index=False)
-    
-    
+
     # Save the volcano plot
     if args.output_volcano:
         df["pep_ident_hovers"] = df["pep_ident"].apply(lambda x: x[:30] + (x[30:] and ".."))
         df["prot_ident_hovers"] = df["prot_ident"].apply(lambda x: x[:30] + (x[30:] and ".."))
+        df["raw_pep_ident_hovers"] = df["raw_pep_ident"].apply(lambda x: x[:30] + (x[30:] and ".."))
         df["ms2s_hovers"] = df["ms2s"].apply(lambda x: x[:30] + (x[30:] and ".."))
+        for h in additional_headers:
+            df[h + "_hovers"] = df[h].apply(lambda x: str(x)[:30] + (str(x)[30:] and ".."))
         df["is_identified"] = df["pep_ident"].apply(lambda x: 2 if x != "" else 1)
         df["is_significat"] = (df["ttest_ind_corrected_pvalue"] < 0.05) * 5 + 5
         df["is_ident_significat"] = df["is_identified"] + df["is_significat"]
         df["color"] = df["is_ident_significat"].apply(coloring_volcano)
         color_discrete_map = {
-            'Not Identified and not Significant': '#365575', 
-            'Identified and not Significant"': '#4f7832', 
+            'Not Identified and not Significant': '#365575',
+            'Identified and not Significant"': '#4f7832',
             'Not Identified and Significant': '#076ddb',
             'Identified and Significant': '#59cc06'
         }
 
         import plotly.express as px
-        fig = px.scatter(df, x="fold_change_A_div_B", y="-log10(pvalue)", color="color", color_discrete_map=color_discrete_map, hover_data={
+        fig = px.scatter(df, x="fold_change_A_div_B", y="-log10(pvalue)", color="color", color_discrete_map=color_discrete_map, hover_data={**{
             "color" : False,
             "openmsid" : True,
             "ttest_ind_pvalue" : True,
@@ -305,19 +312,13 @@ if __name__ == "__main__":
             "feature_global_min_rt" : True,
             "feature_global_max_rt" : True,
             "pep_ident_hovers" : True,
+            "raw_pep_ident_hovers" : True,
             "prot_ident_hovers" : True,
             "ms2s_hovers" : True,
-        })
+        } , **{h + "_hovers": True for h in additional_headers}})
         fig.add_hline(y=-np.log10(0.05), line_width=1, line_dash='dash')
         fig.add_vline(x=np.log2(2), line_width=1, line_dash='dash')
         fig.add_vline(x=np.log2(0.5), line_width=1, line_dash='dash')
-        
+
         # Write volcano
         fig.write_html(args.output_volcano)
-
-
-
-
-
-
-
